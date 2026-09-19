@@ -1,5 +1,12 @@
 package com.sunyongjie.blog.config;
 
+import java.lang.annotation.Annotation;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerInterceptor;
+
 import com.sunyongjie.blog.common.BizException;
 import com.sunyongjie.blog.common.CurrentUser;
 import com.sunyongjie.blog.common.RequireAdmin;
@@ -7,25 +14,22 @@ import com.sunyongjie.blog.common.RequireLogin;
 import com.sunyongjie.blog.common.ResultCode;
 import com.sunyongjie.blog.common.UserContext;
 import com.sunyongjie.blog.util.JwtUtil;
+
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Component;
-import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.HandlerInterceptor;
-
-import java.lang.annotation.Annotation;
 
 /**
  * 登录 / 角色校验拦截器。
  *
- * <p>规则由控制器上的 {@link RequireLogin} / {@link RequireAdmin} 注解声明，
+ * <p>
+ * 规则由控制器上的 {@link RequireLogin} / {@link RequireAdmin} 注解声明，
  * 拦截器只负责统一执行 —— 这样「哪个接口要登录」在 Controller 上一眼可见，
  * 不用在配置里维护一长串路径匹配。
  *
- * <p>抛出的 {@link BizException} 会被 GlobalExceptionHandler 接住，
+ * <p>
+ * 抛出的 {@link BizException} 会被 GlobalExceptionHandler 接住，
  * 所以 401/403 的响应体依然是统一的 Result 结构。
  */
 @Component
@@ -72,17 +76,20 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        UserContext.set(user);
-
+        // 先校验角色再写入上下文：
+        // preHandle 抛异常时 Spring 不会回调 afterCompletion（interceptorIndex 未更新），
+        // 若此时已经 set 过，ThreadLocal 就会残留下来，被下一个复用该线程的请求读到。
         if (needAdmin && !user.isAdmin()) {
             throw new BizException(ResultCode.FORBIDDEN, "无权限访问该接口");
         }
+
+        UserContext.set(user);
         return true;
     }
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
-                               Object handler, Exception ex) {
+            Object handler, Exception ex) {
         // Tomcat 线程是复用的，必须清理，否则登录态会"串"到下个请求
         UserContext.clear();
     }
