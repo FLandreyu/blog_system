@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunyongjie.blog.mapper.CommentMapper">
+
+    <!-- 一次把整篇文章的评论查出来（含回复），两级结构在 Service 层组装 -->
+    <select id="selectByArticleId" resultType="CommentVO">
+        SELECT cm.id,
+               cm.article_id,
+               cm.user_id,
+               u.nickname,
+               u.avatar,
+               cm.content,
+               cm.parent_id,
+               cm.create_time
+        FROM comment cm
+                 LEFT JOIN `user` u ON u.id = cm.user_id
+        WHERE cm.article_id = #{articleId}
+        ORDER BY cm.create_time ASC, cm.id ASC
+    </select>
+
+    <select id="selectById" resultType="Comment">
+        SELECT id, article_id, user_id, content, parent_id, create_time
+        FROM comment
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO comment (article_id, user_id, content, parent_id)
+        VALUES (#{articleId}, #{userId}, #{content}, #{parentId})
+    </insert>
+
+    <delete id="deleteById">
+        DELETE FROM comment
+        WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByParentId">
+        DELETE FROM comment
+        WHERE parent_id = #{parentId}
+    </delete>
+
+    <delete id="deleteByArticleId">
+        DELETE FROM comment
+        WHERE article_id = #{articleId}
+    </delete>
+
+    <select id="countByArticleId" resultType="int">
+        SELECT COUNT(*)
+        FROM comment
+        WHERE article_id = #{articleId}
+    </select>
+
+</mapper>

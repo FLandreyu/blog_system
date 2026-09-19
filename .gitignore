@@ -1,0 +1,39 @@
+# ── Java / Maven ──
+target/
+*.class
+*.jar
+!**/maven-wrapper.jar
+
+# ── IDE ──
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# ── 日志 ──
+*.log
+logs/
+
+# ── 本地配置（含数据库密码，禁止提交）──
+backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-local.properties
+
+# ── Node / 前端 ──
+node_modules/
+dist/
+dist-ssr/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vite/
+
+# ── 操作系统 ──
+.DS_Store
+Thumbs.db
+
+# ── 验收脚本的临时文件 ──
+.verify-work/

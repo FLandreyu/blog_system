@@ -1,0 +1,12 @@
+# 统一换行符：仓库里一律存 LF，避免 Windows 上克隆下来变成 CRLF。
+# 尤其重要：scripts/verify-api.sh 带 CRLF 的话，bash 会因为 `\r` 报
+# "bad interpreter: No such file or directory" 而跑不起来。
+* text=auto eol=lf
+
+# 二进制文件不做换行转换
+*.jar   binary
+*.png   binary
+*.jpg   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary

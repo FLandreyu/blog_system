@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunyongjie.blog.mapper.CategoryMapper">
+
+    <!--
+      左连 article 统计每个分类下的文章数（含草稿，因为草稿同样会挡住分类的删除）。
+      这里用 LEFT JOIN + COUNT(a.id) 而不是 COUNT(*)：
+      分类下没有文章时 a.id 为 NULL，COUNT(a.id) 才会得到 0。
+    -->
+    <select id="selectAllWithCount" resultType="CategoryVO">
+        SELECT c.id,
+               c.name,
+               c.sort,
+               COUNT(a.id) AS article_count
+        FROM category c
+                 LEFT JOIN article a ON a.category_id = c.id
+        GROUP BY c.id, c.name, c.sort
+        ORDER BY c.sort ASC, c.id ASC
+    </select>
+
+    <select id="selectById" resultType="Category">
+        SELECT id, name, sort, create_time
+        FROM category
+        WHERE id = #{id}
+    </select>
+
+    <!-- 改名时排除自己，否则"改成原来的名字"会被自己挡住 -->
+    <select id="countByName" resultType="int">
+        SELECT COUNT(*)
+        FROM category
+        <where>
+            name = #{name}
+            <if test="excludeId != null">
+                AND id != #{excludeId}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO category (name, sort)
+        VALUES (#{name}, #{sort})
+    </insert>
+
+    <update id="update">
+        UPDATE category
+        SET name = #{name},
+            sort = #{sort}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM category
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

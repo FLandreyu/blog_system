@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunyongjie.blog.mapper.ArticleMapper">
+
+    <!--
+      多条件组合查询的核心。
+      <where> 会自动去掉开头多余的 AND，并且当所有 <if> 都不成立时
+      整段不会生成 WHERE 子句 —— 不会出现 "WHERE AND title LIKE '%%'" 这种问题。
+      取值统一用 #{}（预编译占位符），不用 ${}，从根上避免 SQL 注入。
+    -->
+    <sql id="queryCondition">
+        <where>
+            <if test="categoryId != null">
+                AND a.category_id = #{categoryId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND a.title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="authorId != null">
+                AND a.author_id = #{authorId}
+            </if>
+            <if test="status != null">
+                AND a.status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 列表不查 content（longtext），避免把大字段全捞出来 -->
+    <select id="selectPage" resultType="ArticleVO">
+        SELECT a.id,
+               a.title,
+               a.summary,
+               a.cover,
+               a.category_id,
+               c.name AS category_name,
+               a.author_id,
+               u.nickname AS author_name,
+               a.status,
+               a.view_count,
+               a.create_time
+        FROM article a
+                 LEFT JOIN category c ON c.id = a.category_id
+                 LEFT JOIN `user` u ON u.id = a.author_id
+        <include refid="queryCondition"/>
+        ORDER BY a.create_time DESC, a.id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 条件只用到 a.*，所以不需要 join，走同样的 queryCondition -->
+    <select id="countByQuery" resultType="long">
+        SELECT COUNT(*)
+        FROM article a
+        <include refid="queryCondition"/>
+    </select>
+
+    <select id="selectById" resultType="Article">
+        SELECT id, title, summary, content, cover, category_id, author_id,
+               status, view_count, create_time, update_time
+        FROM article
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectDetailById" resultType="ArticleDetailVO">
+        SELECT a.id,
+               a.title,
+               a.summary,
+               a.content,
+               a.cover,
+               a.category_id,
+               c.name    AS category_name,
+               a.author_id,
+               u.nickname AS author_name,
+               u.avatar   AS author_avatar,
+               a.status,
+               a.view_count,
+               a.create_time,
+               a.update_time,
+               (SELECT COUNT(*) FROM comment cm WHERE cm.article_id = a.id) AS comment_count
+        FROM article a
+                 LEFT JOIN category c ON c.id = a.category_id
+                 LEFT JOIN `user` u ON u.id = a.author_id
+        WHERE a.id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO article (title, summary, content, cover, category_id, author_id, status, view_count)
+        VALUES (#{title}, #{summary}, #{content}, #{cover}, #{categoryId}, #{authorId}, #{status}, 0)
+    </insert>
+
+    <update id="update">
+        UPDATE article
+        SET title       = #{title},
+            summary     = #{summary},
+            content     = #{content},
+            cover       = #{cover},
+            category_id = #{categoryId},
+            status      = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM article
+        WHERE id = #{id}
+    </delete>
+
+    <select id="countByCategoryId" resultType="int">
+        SELECT COUNT(*)
+        FROM article
+        WHERE category_id = #{categoryId}
+    </select>
+
+    <!-- 自增交给数据库：一条 SQL 原子完成，不会像"读出来 +1 再写回去"那样丢更新 -->
+    <update id="incrementViewCount">
+        UPDATE article
+        SET view_count = view_count + 1
+        WHERE id = #{id}
+    </update>
+
+</mapper>

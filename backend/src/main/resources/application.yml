@@ -1,0 +1,29 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: blog-backend
+  # 数据库地址、账号密码、jwt.secret 都放在 application-local.yml（已在 .gitignore 中）
+  profiles:
+    active: local
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.sunyongjie.blog.entity,com.sunyongjie.blog.dto
+  configuration:
+    # 数据库下划线字段 -> Java 驼峰属性，省掉大量 resultMap
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'NULL'
+
+logging:
+  level:
+    # 打印 MyBatis 实际执行的 SQL 和参数，
+    # 这是验证 <where> / <if> 有没有拼出多余条件最直接的方式（不想要就把这行删掉）
+    com.sunyongjie.blog.mapper: debug
